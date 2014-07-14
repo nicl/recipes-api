@@ -54,8 +54,8 @@ object RecipeService {
   )
 
   val cheeseOnToast = JsonLoader.loadJson("src/main/resources/recipes/cheese-on-toast.json")
-
-  val recipes = Map("123456" -> cheeseOnToast)
+  val chocolateCake = JsonLoader.loadJson("src/main/resources/recipes/chocolate-cake.json")
+  val recipes = Map("123456" -> cheeseOnToast, "234567" -> chocolateCake)
 }
 
 object JsonLoader {
