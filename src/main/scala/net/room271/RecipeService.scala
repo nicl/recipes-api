@@ -33,7 +33,13 @@ trait RecipeService extends HttpService with Json4sSupport {
 
   val recipe = path("recipes" / Segment) { id => complete { Repository.get(id) } }
 
-  val routes = get { index ~ recipes ~ recipe }
+  val search = path("search" / "recipes") {
+    parameters('q ?) { q =>
+      complete { Repository.search(q) }
+    }
+  }
+
+  val routes = get { index ~ recipes ~ recipe ~ search }
 }
 
 object RecipeService {
