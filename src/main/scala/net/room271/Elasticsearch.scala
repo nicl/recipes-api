@@ -6,8 +6,9 @@ import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.action.{ActionListener, ListenableActionFuture}
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.transport.InetSocketTransportAddress
+import org.elasticsearch.index.query.{MatchQueryBuilder, AndFilterBuilder}
 import org.elasticsearch.index.query.FilterBuilders._
-import org.elasticsearch.index.query.QueryBuilders.{filteredQuery, matchAllQuery}
+import org.elasticsearch.index.query.QueryBuilders._
 
 import scala.concurrent.{Future, Promise}
 
@@ -32,26 +33,33 @@ object Elasticsearch {
   }
 
   def search(queryString: Option[String]): Future[SearchResponse] = {
-    val queryFilters = queryString map QueryStringParser.parse map filtersFromSearchFilters
+    val searchFilters = queryString map QueryStringParser.parse
+    val filters = searchFilters map filtersFromSearchFilters getOrElse matchAllFilter
+    val queries = searchFilters map queriesFromSearchFilters getOrElse matchAllQuery
 
     val response = client.prepareSearch("recipes")
       .setTypes("recipe")
+      .setQuery(filteredQuery(queries, filters))
+      .execute
 
-    queryFilters foreach (qfs => response.setQuery(filteredQuery(matchAllQuery, qfs)))
+    toFuture(response)
+  }
 
-    toFuture(response.execute())
+  private[this] def queriesFromSearchFilters(searchFilters: SearchFilters) = {
+    searchFilters.q match {
+      case Nil => matchAllQuery()
+      case some => {
+        multiMatchQuery(some.mkString(" "), "name", "description")
+          .operator(MatchQueryBuilder.Operator.AND)
+      }
+    }
   }
 
   private[this] def filtersFromSearchFilters(searchFilters: SearchFilters) = {
     val builder = andFilter()
 
-    if (searchFilters.q.nonEmpty) {
-      // TODO better to AND the arguments and then search?
-      builder.add(termsFilter("description", searchFilters.q :_*))
-    }
-
     searchFilters.ingredient map { ingredient =>
-      builder.add(termFilter("ingredient", ingredient))
+      builder.add(termFilter("ingredients.name", ingredient))
     }
 
     searchFilters.maxCookTime map {

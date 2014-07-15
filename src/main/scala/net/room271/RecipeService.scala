@@ -23,7 +23,9 @@ trait RecipeService extends HttpService with Json4sSupport {
   implicit def executionContext = actorRefFactory.dispatcher
   implicit val json4sFormats = DefaultFormats ++ JodaTimeSerializers.all
 
-  val startPoints = Map("recipes" -> (Config.basePath + "/recipes"))
+  val startPoints = Map(
+    "recipes" -> (Config.basePath + "/recipes"),
+    "search" -> (Config.basePath + "/search/recipes"))
 
   val basePath = "http://localhost:9000"
 
@@ -34,9 +36,7 @@ trait RecipeService extends HttpService with Json4sSupport {
   val recipe = path("recipes" / Segment) { id => complete { Repository.get(id) } }
 
   val search = path("search" / "recipes") {
-    parameters('q ?) { q =>
-      complete { Repository.search(q) }
-    }
+    parameters('q ?) { q => complete { Repository.search(q) } }
   }
 
   val routes = get { index ~ recipes ~ recipe ~ search }

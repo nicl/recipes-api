@@ -51,10 +51,10 @@ object QueryStringParser {
   def getField(s: String, f: String => Boolean): Option[String] =
     getParts(s) find f
 
-  def getParts(s: String): List[String] = s.split('+').toList
+  def getParts(s: String): List[String] = s.split(' ').toList
 
   def getValue(s: String): Option[String] = {
-    s.drop(s.indexOf(':')) match {
+    s.drop(s.indexOf(':') + 1) match {
       case empty if empty.isEmpty => None
       case nonEmpty => Some(nonEmpty)
     }
