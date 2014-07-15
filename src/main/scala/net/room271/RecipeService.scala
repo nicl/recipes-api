@@ -1,4 +1,4 @@
-package com.example
+package net.room271
 
 import akka.actor.Actor
 import org.joda.time.Period
@@ -20,15 +20,18 @@ class RecipeServiceActor extends Actor with RecipeService {
 
 trait RecipeService extends HttpService with Json4sSupport {
 
+  implicit def executionContext = actorRefFactory.dispatcher
   implicit val json4sFormats = DefaultFormats ++ JodaTimeSerializers.all
+
+  val startPoints = Map("recipes" -> (Config.basePath + "/recipes"))
 
   val basePath = "http://localhost:9000"
 
-  val index = pathSingleSlash { complete { Map("recipes" -> (basePath + "/recipes")) } }
+  val index = pathSingleSlash { complete { startPoints } }
 
-  val recipes = path("recipes") { complete { RecipeService.recipes.values } }
+  val recipes = path("recipes") { complete { Repository.getAll() } }
 
-  val recipe = path("recipes" / IntNumber) { id => complete { RecipeService.recipes(id.toString) } }
+  val recipe = path("recipes" / Segment) { id => complete { Repository.get(id) } }
 
   val routes = get { index ~ recipes ~ recipe }
 }
